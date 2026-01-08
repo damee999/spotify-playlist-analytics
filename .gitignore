@@ -1,0 +1,17 @@
+.venv/
+
+.env
+
+__pycache__/
+*.pyc
+.cache/
+
+logs/
+*.log
+
+spotify_snapshot_*.csv
+
+.DS_Store
+Thumbs.db
+
+.streamlit/
