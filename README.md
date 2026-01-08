@@ -1,6 +1,6 @@
 # Spotify Playlist Analytics — AI-Ready Data Pipeline & Dashboard
 
-An end-to-end analytics project that automatically collects Spotify playlist data, stores daily snapshots in PostgreSQL, visualizes trends in a Streamlit dashboard, and generates **AI-assisted insights using a pluggable LLM layer** (local or mock).
+An end-to-end analytics project that automatically collects Spotify playlist data, stores daily snapshots in PostgreSQL, visualizes trends in a Streamlit dashboard, and generates AI-assisted insights using a pluggable LLM layer (local or mock).
 
 This project was built with a **production mindset**: automation first, clean data modeling, explainable analytics, and AI integration that is cost-aware and provider-agnostic.
 
