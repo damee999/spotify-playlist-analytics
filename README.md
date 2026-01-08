@@ -18,7 +18,7 @@ This project was built with a **production mindset**: automation first, clean da
 
 ---
 
-## Tech Stack
+## Tech 
 
 **Data & Backend**
 - Python
