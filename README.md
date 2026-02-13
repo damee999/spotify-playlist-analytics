@@ -1,17 +1,14 @@
 # Spotify Playlist Analytics — AI-Ready Data Pipeline & Dashboard
 
-An end-to-end analytics project that automatically collects Spotify playlist data, stores daily snapshots in PostgreSQL, visualizes trends in a Streamlit dashboard, and generates AI-assisted insights using a pluggable LLM layer (local or mock).
-
-This project was built with a **production mindset**: automation first, clean data modeling, explainable analytics, and AI integration that is cost-aware and provider-agnostic.
+A data pipeline that collects Spotify playlist data, stores daily snapshots in PostgreSQL, visualizes trends in a Streamlit dashboard, and produces AI-assisted analytical insights.
 
 ---
 
 ## What This Project Does
 
-**Automatically:**
-- Extracts track data from multiple Spotify playlists
-- Stores **daily snapshots** in PostgreSQL (history preserved)
-- Detects playlist changes (new / removed tracks)
+**What It Does:**
+- Collects playlist and track data from Spotify
+- Stores daily snapshots in PostgreSQL 
 - Tracks popularity trends over time
 - Identifies biggest movers between snapshots
 - Generates AI-assisted analytical summaries
@@ -20,39 +17,18 @@ This project was built with a **production mindset**: automation first, clean da
 
 ## Tech 
 
-**Data & Backend**
-- Python
-- Spotify Web API
-- PostgreSQL
-- psycopg2
-- pandas
+- Python, Spotify Web API, PostgreSQL
+- pandas, psycopg2
+- Streamlit, Matplotlib
+- Local LLM (Ollama) + deterministic mock fallback
 
-**Frontend / Analytics**
-- Streamlit
-- Matplotlib
 
-**AI / Automation**
-- Prompt engineering
-- Local LLM via Ollama
-- Deterministic mock AI fallback
+<img width="1909" height="833" alt="1-spotify" src="https://github.com/user-attachments/assets/0742b3e2-b326-49bc-bf9a-b9d017ef660f" />
 
-**Dev & Ops**
-- Virtual environments
-- `.env` configuration
-- Scheduled extraction via `.bat`
-- GitHub version control
+<img width="1888" height="896" alt="2 - spotify" src="https://github.com/user-attachments/assets/4ce5e5ba-100b-434a-a538-3dd72f07cdc4" />
 
----
+<img width="1807" height="993" alt="3 - spotify" src="https://github.com/user-attachments/assets/0fb2c4f0-62b6-4b0a-a480-1b8410c57d7f" />
 
-## How to Run Locally
 
-### 1. Clone repository
-```bash
-git clone https://github.com/<your-username>/spotify-playlist-analytics.git
-cd spotify-playlist-analytics
-```
 
-<img width="1920" height="1080" alt="1" src="https://github.com/user-attachments/assets/8f7c1fae-7ee6-4405-965e-00a0134a1749" />
-
-<img width="1920" height="1080" alt="2" src="https://github.com/user-attachments/assets/f30fa551-0c97-4fc4-91fc-26c2ac15d18c" />
 
