@@ -122,8 +122,28 @@ def get_ai_insights_cached(prompt: str, provider: str, ollama_url: str, ollama_m
 
 
 # UI
-st.set_page_config(page_title="Spotify Playlist Analytics", layout="wide")
-st.title("🎧 Spotify Playlist Analytics Dashboard")
+st.set_page_config(page_title="Spotify Playlist Analytics", layout="wide", initial_sidebar_state="expanded")
+
+st.markdown("""
+<style>
+    .main {
+        padding-top: 0;
+    }
+    .section-header {
+        border-bottom: 2px solid #1DB954;
+        padding-bottom: 0.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .signal-text {
+        margin: 0.5rem 0;
+        padding: 0.5rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+st.title("Spotify Playlist Analytics")
 
 # Sidebar AI settings
 st.sidebar.markdown("### AI settings")
@@ -135,7 +155,7 @@ if st.sidebar.button("Test AI connection"):
     if provider == "Mock (free)":
         st.sidebar.success("Mock mode OK (no setup needed).")
     else:
-        st.sidebar.success("Ollama reachable ✅" if ollama_available(ollama_url) else "Ollama not reachable ❌")
+        st.sidebar.success("Ollama reachable" if ollama_available(ollama_url) else "Ollama not reachable")
 
 
 # Load data
@@ -209,17 +229,23 @@ latest_day = df["snapshot_date"].max()
 df_latest = df[df["snapshot_date"] == latest_day].copy()
 
 # KPIs
-k1, k2, k3 = st.columns(3)
-k1.metric("Latest snapshot date", str(latest_day))
-k2.metric("Tracks in latest snapshot", int(df_latest.shape[0]))
-k3.metric("Avg popularity (latest)", round(float(df_latest["popularity"].mean()), 2))
+st.markdown('<h3 class="section-header">Key Metrics</h3>', unsafe_allow_html=True)
+k1, k2, k3 = st.columns(3, gap="medium")
+with k1:
+    st.metric("Latest Snapshot", str(latest_day), delta=None)
+with k2:
+    st.metric("Tracks in Latest", int(df_latest.shape[0]), delta=None)
+with k3:
+    avg_pop = round(float(df_latest["popularity"].mean()), 2)
+    st.metric("Avg Popularity", avg_pop, delta=None)
 
 
 # Charts 
-left, right = st.columns(2)
+st.markdown('<h3 class="section-header">Analysis</h3>', unsafe_allow_html=True)
+left, right = st.columns(2, gap="medium")
 
 with left:
-    st.subheader("Top artists (avg popularity) — latest day")
+    st.markdown("#### Top Artists (Latest Day)")
     top_artists = (
         df_latest.groupby("artist_name")["popularity"]
         .mean()
@@ -233,13 +259,20 @@ with left:
         top_artists_df,
         x="artist_name",
         y="avg_popularity",
+        color="avg_popularity",
+        color_continuous_scale=["#1DB954", "#1ed760"],
         title=None,
     )
-    fig_artists.update_layout(xaxis_tickangle=-35, margin=dict(l=10, r=10, t=10, b=10))
+    fig_artists.update_layout(
+        xaxis_tickangle=-35, 
+        margin=dict(l=10, r=10, t=10, b=10),
+        showlegend=False,
+        height=400
+    )
     st.plotly_chart(fig_artists, use_container_width=True)
 
 with right:
-    st.subheader("Top tracks — latest day")
+    st.markdown("#### Top Tracks (Latest Day)")
     top_tracks = df_latest.sort_values("popularity", ascending=False).head(20)
     st.dataframe(
         top_tracks[["track_name", "artist_name", "album_name", "popularity"]],
@@ -247,26 +280,66 @@ with right:
         hide_index=True,
     )
 
+# Popularity Distribution
+st.markdown('<h3 class="section-header">Popularity Distribution</h3>', unsafe_allow_html=True)
+st.caption("How your tracks are spread across popularity levels (latest day)")
+
+fig_dist = px.histogram(
+    df_latest,
+    x="popularity",
+    nbins=20,
+    title=None,
+    color_discrete_sequence=["#1DB954"]
+)
+fig_dist.update_layout(
+    xaxis_title="Popularity Score",
+    yaxis_title="Number of Tracks",
+    margin=dict(l=10, r=10, t=10, b=10),
+    height=350,
+    showlegend=False
+)
+st.plotly_chart(fig_dist, use_container_width=True)
+
 trend = df.groupby("snapshot_date")["popularity"].mean().reset_index().sort_values("snapshot_date")
-st.subheader("Average popularity trend (selected range)")
+st.markdown('<h3 class="section-header">Popularity Trend</h3>', unsafe_allow_html=True)
 
 lc, rc = st.columns([2, 3])
 with lc:
-    fig_trend = px.line(trend, x="snapshot_date", y="popularity", markers=True)
-    fig_trend.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+    fig_trend = px.line(
+        trend, 
+        x="snapshot_date", 
+        y="popularity", 
+        markers=True,
+        title=None,
+    )
+    fig_trend.update_traces(
+        line=dict(color="#1DB954", width=3),
+        marker=dict(size=8, color="#1ed760")
+    )
+    fig_trend.update_layout(
+        margin=dict(l=10, r=10, t=10, b=10),
+        hovermode='x unified',
+        height=350
+    )
     st.plotly_chart(fig_trend, use_container_width=True)
 
 with rc:
-    st.markdown(
-        """
-**What this shows**
-- Tracks average track popularity over time for the selected playlist.
-- This becomes a stronger signal after you collect more daily snapshots.
-"""
-    )
+    st.markdown("""
+    **What This Shows**
+    
+    This chart tracks the average popularity of all tracks in your playlist over time.
+    
+    - **Upward trend** → Tracks are gaining traction
+    - **Stable trend** → Consistent, reliable playlist mood
+    - **Downward trend** → Tracks may be aging or losing relevance
+    
+    *Tip: More snapshot days = stronger signal*
+    """)
 
 
-st.subheader("Playlist changes (new / removed tracks)")
+
+st.markdown('<h3 class="section-header">Playlist Changes</h3>', unsafe_allow_html=True)
+st.caption("Tracks added, removed, and how much your playlist rotates over time")
 
 dates_check = pd.read_sql_query(
     """
@@ -337,14 +410,28 @@ else:
 
     stability = (n_overlap / n_today * 100) if n_today else 0.0
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Tracks today", n_today)
-    c2.metric("Tracks previous", n_prev)
-    c3.metric("New tracks", n_new)
-    c4.metric("Removed tracks", n_removed)
-    st.metric("Stability (overlap % of today)", f"{stability:.1f}%")
+    c1, c2, c3, c4 = st.columns(4, gap="medium")
+    with c1:
+        st.metric("Today", n_today)
+    with c2:
+        st.metric("Previous", n_prev)
+    with c3:
+        st.metric("New Tracks", n_new)
+    with c4:
+        st.metric("Removed", n_removed)
+    
+    st.divider()
+    
+    # Stability indicator
+    if stability >= 85:
+        st.markdown(f'<div class="signal-text"><strong>Stability: {stability:.1f}%</strong> — Very stable. Strong playlist identity.</div>', unsafe_allow_html=True)
+    elif stability >= 60:
+        st.markdown(f'<div class="signal-text"><strong>Stability: {stability:.1f}%</strong> — Moderately stable. Regular rotations but keeps core sound.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="signal-text"><strong>Stability: {stability:.1f}%</strong> — Volatile. Heavy rotation or trend-driven.</div>', unsafe_allow_html=True)
 
-st.subheader("Biggest movers between last two snapshots")
+st.markdown('<h3 class="section-header">Biggest Movers (Last 2 Snapshots)</h3>', unsafe_allow_html=True)
+st.caption("Tracks that gained or lost the most popularity between your last two snapshot dates")
 
 if n_days < 2:
     st.info("Not enough snapshot dates yet for movers. Run spotify_extract.py on at least 2 different days for this playlist.")
@@ -391,33 +478,58 @@ else:
     if last_two.empty:
         st.info("Not enough overlap between the last two days to compute movers yet.")
     else:
-        st.dataframe(last_two, use_container_width=True, hide_index=True)
+        top_gainers = last_two.nlargest(10, "delta")
+        top_losers = last_two.nsmallest(10, "delta")
+        
+        movers_display = pd.concat([top_gainers, top_losers]).copy()
+        movers_display["label"] = movers_display["track_name"] + " - " + movers_display["artist_name"]
+        movers_display = movers_display.sort_values("delta")
+        
+        fig_movers = px.bar(
+            movers_display,
+            x="delta",
+            y="label",
+            color="delta",
+            color_continuous_scale=["#d62728", "#1DB954"],
+            title=None,
+            orientation="h"
+        )
+        fig_movers.update_layout(
+            xaxis_title="Popularity Change",
+            yaxis_title="",
+            margin=dict(l=200, r=10, t=10, b=10),
+            height=500,
+            showlegend=False
+        )
+        fig_movers.update_yaxes(tickfont=dict(size=10))
+        st.plotly_chart(fig_movers, use_container_width=True)
 
 conn.close()
 
 
 # Signals 
-st.subheader("📌 Signals")
+st.markdown('<h3 class="section-header">Signals</h3>', unsafe_allow_html=True)
+st.caption("Quick takeaways about your playlist's popularity and stability")
 
 avg_pop_latest = float(df_latest["popularity"].mean())
 signals = []
 
 if avg_pop_latest >= 70:
-    signals.append("High average popularity → likely mainstream / currently relevant.")
+    signals.append("High Popularity — Mainstream tracks with strong current relevance.")
 elif avg_pop_latest >= 50:
-    signals.append("Mid popularity → mixed catalog; some hits, some deeper cuts.")
+    signals.append("Mid Popularity — Mixed catalog; some hits, some deeper cuts.")
 else:
-    signals.append("Lower average popularity → likely niche, older catalog, or more underground picks.")
+    signals.append("Lower Popularity — Niche, older catalog, or underground picks.")
 
 if n_days >= 2:
     if stability >= 85:
-        signals.append(f"Very stable ({stability:.1f}%) → strong identity / consistent curation.")
+        signals.append(f"Very Stable ({stability:.1f}%) — Strong identity & consistent curation.")
     elif stability >= 60:
-        signals.append(f"Moderately stable ({stability:.1f}%) → rotates tracks but keeps a core sound.")
+        signals.append(f"Moderately Stable ({stability:.1f}%) — Rotates tracks but keeps core sound.")
     else:
-        signals.append(f"Volatile ({stability:.1f}%) → heavy rotation; possibly trend-driven.")
+        signals.append(f"Volatile ({stability:.1f}%) — Heavy rotation; possibly trend-driven.")
 else:
-    signals.append("Need 2+ snapshot days to compute stability and change signals.")
+    signals.append("Need More Data — Collect 2+ snapshot days to unlock stability signals.")
 
 for s in signals:
     st.write("• " + s)
@@ -458,7 +570,7 @@ prompt = build_ai_prompt(
 
 
 # AI Insights 
-st.subheader("🤖 AI Playlist Insights")
+st.markdown('<h3 class="section-header">AI Playlist Insights</h3>', unsafe_allow_html=True)
 
 with st.expander("Show prompt sent to AI (for transparency)"):
     st.code(prompt)
