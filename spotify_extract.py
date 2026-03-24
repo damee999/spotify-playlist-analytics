@@ -11,7 +11,7 @@ import sys
 
 load_dotenv()
 
-# Force UTF-8 for Windows console/logging
+
 os.environ["PYTHONIOENCODING"] = "utf-8"
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -19,7 +19,7 @@ try:
 except Exception:
     pass
 
-# --- Spotify auth ---
+#Spotify auth
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
@@ -50,7 +50,7 @@ def fetch_all_playlist_items(playlist_id: str, page_limit: int = 100):
     return items
 
 
-# --- PostgreSQL load (connect once) ---
+#PostgreSQL load 
 conn = psycopg2.connect(
     host=os.getenv("PGHOST"),
     port=os.getenv("PGPORT"),
@@ -63,7 +63,7 @@ cur = conn.cursor()
 for PLAYLIST_NAME, PLAYLIST_ID in PLAYLISTS.items():
     print(f"\nProcessing playlist: {PLAYLIST_NAME} ({PLAYLIST_ID})")
 
-    # (Optional) fetch real name from Spotify, but keep your label if you prefer
+   
     try:
         playlist_meta = sp.playlist(PLAYLIST_ID, market="MK")
         playlist_name_real = playlist_meta.get("name") or PLAYLIST_NAME
@@ -95,7 +95,7 @@ for PLAYLIST_NAME, PLAYLIST_ID in PLAYLISTS.items():
 
     track_ids = [r["track_id"] for r in rows]
 
-    # Try audio features (will continue if forbidden)
+
     features_map = {}
     try:
         for i in range(0, len(track_ids), 100):
@@ -113,7 +113,7 @@ for PLAYLIST_NAME, PLAYLIST_ID in PLAYLISTS.items():
         print("⚠️ Could not fetch audio features (continuing without them):")
         print(e)
 
-    # Merge features (or None)
+    
     for r in rows:
         f = features_map.get(r["track_id"], {})
         r["danceability"] = f.get("danceability")
@@ -124,14 +124,12 @@ for PLAYLIST_NAME, PLAYLIST_ID in PLAYLISTS.items():
     df = pd.DataFrame(rows)
     print(f"Fetched {len(df)} tracks from the playlist.")
 
-    # --- Save CSV snapshot (one per playlist per day) ---
+    # Save CSV snapshot (one per playlist per day)
     filename = f"spotify_snapshot_{PLAYLIST_ID}_{snapshot_date}.csv"
     df.to_csv(filename, index=False)
     print(f"💾 CSV snapshot saved -> {filename}")
 
-    # =========================
-    # BULK UPSERT: tracks table
-    # =========================
+    
     tracks_values = [
         (row["track_id"], row["track_name"], row["artist_name"], row["album_name"])
         for _, row in df.iterrows()
@@ -146,9 +144,7 @@ for PLAYLIST_NAME, PLAYLIST_ID in PLAYLISTS.items():
             album_name = EXCLUDED.album_name;
     """, tracks_values, page_size=1000)
 
-    # ============================
-    # BULK UPSERT: track_snapshots
-    # ============================
+
     snap_values = []
     for _, row in df.iterrows():
         snap_values.append((
